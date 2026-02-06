@@ -1,0 +1,39 @@
+---
+description: ReadyCRM v2 – فلسفه پروژه، ساختار و قوانین (بدون build، اسکریپتی، DDD)
+alwaysApply: true
+---
+
+# ReadyCRM v2 – راهنمای پروژه برای Cursor AI
+
+## قوانین اصلی (الزامی)
+
+- **هیچ Build Step**: بدون `composer install` / `npm build` روی سرور. وابستگی‌ها داخل `vendor/` commit می‌شن. پروژه مثل وردپرس اسکریپتی است؛ نصب فقط از طریق Web Installer (`/install`).
+- **ساختار کد**: Clean Architecture + DDD — Domain Entities مستقل، Repository برای Data Access، Service برای Business Logic، Policy برای Authorization. Background jobs فقط با Cron و فایل‌های CLI (مثل `php cli/worker.php`).
+
+## ساختار پوشه‌ها
+
+- `app/Domain/Entities/` و زیرپوشه‌ها (مثلاً `Sms/`) برای Entityها؛ `Enums/`, `Policies/`, `ValueObjects/` در همان سطح.
+- `app/Repositories/` (و زیرپوشه‌ها مثل `Sms/`) برای Repositoryها.
+- `app/Services/` و زیرپوشه‌ها برای سرویس‌ها؛ `app/Jobs/` برای Jobها؛ `app/Http/Controllers/` و زیرپوشه‌ها برای API/وب.
+- `database/migrations/` برای مایگریشن‌های SQL (InnoDB, utf8mb4). مایگریشن‌های ماژول در زیرپوشه (مثلاً `auth/`, `sms/`).
+- `install/`, `public/`, `private/`, `cli/` طبق ساختار موجود.
+
+## الگوهای کدنویسی
+
+- **Entity**: کلاس `final` با propertyهای تایپ‌دار، constructor خصوصی، `fromArray`/`toArray`، helperهای نوع‌دهی (مثل `toIntOrNull`). الگو: `app/Domain/Entities/Customer.php`.
+- **Repository**: سازنده با `PDO`، متدهای `findById`, `save` (با insert/update داخلی). الگو در همان پروژه.
+- **Service**: وابستگی به Repositoryها از طریق constructor؛ اعتبارسنجی و منطق کسب‌وکار در سرویس.
+- **Migration**: فایل‌های `.sql` با `CREATE TABLE IF NOT EXISTS`، ستون‌ها با نوع و `DEFAULT`، `INDEX` و در صورت نیاز `deleted_at` برای soft delete؛ کامنت فارسی برای جدول/ستون‌های مهم مجاز.
+
+## اصول کار با کد
+
+- کدهای **موجود و آماده** را تغییر نده؛ فقط قسمت‌های **خالی** را پر کن.
+- از الگوهای موجود (مثل Customer، WooClient، Migrator) پیروی کن.
+- کد تمیز: type hints، error handling مناسب، کامنت فارسی برای منطق پیچیده.
+- سازگار با «بدون build»: از PSR-4 و autoload موجود استفاده کن؛ در صورت نیاز به کتابخانه جدید، فقط پیشنهاد بده و tooling جدید اضافه نکن.
+
+## اولویت پر کردن
+
+1. مایگریشن‌ها (بدون جدول سیستم کار نمی‌کند).
+2. Repositoryها (دسترسی به دیتا).
+3. Entityهای ناقص (مثلاً SMS) و سپس سرویس/Jobهای مربوط.
